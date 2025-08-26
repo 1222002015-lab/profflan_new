@@ -1,15 +1,45 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useApp } from "../../context/AppContext"
 import { User, Plus, Edit, Trash2, Users, FileText, UserCheck, Shield, Settings } from "lucide-react"
 import { UserForm } from "../forms/UserForm"
+import { createClient } from "../../../lib/supabase/client"
 
 export function AdminDashboard() {
   const { state, dispatch } = useApp()
   const [showForm, setShowForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [supabaseUsers, setSupabaseUsers] = useState([])
+
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadUsersFromDatabase()
+  }, [])
+
+  const loadUsersFromDatabase = async () => {
+    try {
+      setLoading(true)
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("Error loading users:", error)
+        return
+      }
+
+      setSupabaseUsers(profiles || [])
+    } catch (error) {
+      console.error("Error loading users:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleAddUser = () => {
     setEditingUser(null)
@@ -21,32 +51,97 @@ export function AdminDashboard() {
     setShowForm(true)
   }
 
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (confirm("Apakah Anda yakin ingin menghapus pengguna ini?")) {
-      dispatch({ type: "DELETE_USER", payload: userId })
+      try {
+        setLoading(true)
+        const { error } = await supabase.from("profiles").delete().eq("id", userId)
+
+        if (error) {
+          console.error("Error deleting user:", error)
+          alert("Gagal menghapus pengguna: " + error.message)
+          return
+        }
+
+        dispatch({ type: "DELETE_USER", payload: userId })
+        await loadUsersFromDatabase()
+        alert("Pengguna berhasil dihapus")
+      } catch (error) {
+        console.error("Error deleting user:", error)
+        alert("Gagal menghapus pengguna")
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
-  const handleFormSubmit = (userData) => {
-    if (editingUser) {
-      dispatch({ type: "UPDATE_USER", payload: { ...userData, id: editingUser.id } })
-    } else {
-      dispatch({ type: "ADD_USER", payload: { ...userData, id: Date.now().toString() } })
+  const handleFormSubmit = async (userData) => {
+    try {
+      setLoading(true)
+
+      if (editingUser) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            name: userData.name,
+            role: userData.role,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingUser.id)
+
+        if (error) {
+          console.error("Error updating user:", error)
+          alert("Gagal mengupdate pengguna: " + error.message)
+          return
+        }
+
+        dispatch({ type: "UPDATE_USER", payload: { ...userData, id: editingUser.id } })
+        alert("Pengguna berhasil diupdate")
+      } else {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: `${userData.id}@example.com`,
+          password: userData.password,
+          options: {
+            data: {
+              name: userData.name,
+              role: userData.role,
+            },
+          },
+        })
+
+        if (authError) {
+          console.error("Error creating user:", authError)
+          alert("Gagal membuat pengguna: " + authError.message)
+          return
+        }
+
+        dispatch({ type: "ADD_USER", payload: { ...userData, id: authData.user?.id || Date.now().toString() } })
+        alert("Pengguna berhasil ditambahkan")
+      }
+
+      await loadUsersFromDatabase()
+      setShowForm(false)
+      setEditingUser(null)
+    } catch (error) {
+      console.error("Error saving user:", error)
+      alert("Gagal menyimpan pengguna")
+    } finally {
+      setLoading(false)
     }
-    setShowForm(false)
-    setEditingUser(null)
   }
 
   const handleLogout = () => {
     dispatch({ type: "LOGOUT" })
   }
 
+  const allUsers = [...state.users, ...supabaseUsers.filter((su) => !state.users.find((u) => u.id === su.id))]
+
   const stats = {
-    totalUsers: state.users.length,
-    adminUsers: state.users.filter((u) => u.role === "Admin").length,
-    tuUsers: state.users.filter((u) => u.role === "TU").length,
-    coordinatorUsers: state.users.filter((u) => u.role === "Koordinator").length,
-    staffUsers: state.users.filter((u) => u.role === "Staff").length,
+    totalUsers: allUsers.length,
+    adminUsers: allUsers.filter((u) => u.role === "Admin").length,
+    tuUsers: allUsers.filter((u) => u.role === "TU").length,
+    coordinatorUsers: allUsers.filter((u) => u.role === "Koordinator").length,
+    staffUsers: allUsers.filter((u) => u.role === "Staff").length,
   }
 
   return (
@@ -55,6 +150,7 @@ export function AdminDashboard() {
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Administrator</h2>
           <p className="text-gray-600">Kelola akun pengguna sistem tracking pesan dan workflow</p>
+          {loading && <p className="text-blue-600 text-sm mt-2">Loading...</p>}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
@@ -124,7 +220,7 @@ export function AdminDashboard() {
           </div>
 
           <div className="p-6">
-            <h4 className="text-lg font-medium text-gray-900 mb-4">Daftar Pengguna ({state.users.length})</h4>
+            <h4 className="text-lg font-medium text-gray-900 mb-4">Daftar Pengguna ({allUsers.length})</h4>
 
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -137,7 +233,7 @@ export function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {state.users.map((user) => (
+                  {allUsers.map((user) => (
                     <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
@@ -167,14 +263,16 @@ export function AdminDashboard() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleEditUser(user)}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            disabled={loading}
+                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                             title="Edit Pengguna"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            disabled={loading}
+                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                             title="Hapus Pengguna"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -183,7 +281,7 @@ export function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
-                  {state.users.length === 0 && (
+                  {allUsers.length === 0 && (
                     <tr>
                       <td colSpan={4} className="py-8 text-center text-gray-500">
                         Belum ada pengguna yang terdaftar.
@@ -207,6 +305,7 @@ export function AdminDashboard() {
             setShowForm(false)
             setEditingUser(null)
           }}
+          loading={loading}
         />
       )}
     </div>

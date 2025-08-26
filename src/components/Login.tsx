@@ -124,10 +124,10 @@ export function Login() {
         </form>
 
         <div className="mt-6 sm:mt-8 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/20">
-          <p className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
+          <div className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
             <div className="w-2 h-2 bg-accent rounded-full"></div>
             Akun Demo untuk Testing
-          </p>
+          </div>
           <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs">
             <div className="space-y-1">
               <p className="font-medium text-foreground">Admin</p>
