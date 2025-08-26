@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, type ReactNode } from "react"
+import { createContext, useContext, useReducer, useMemo, useCallback, type ReactNode } from "react"
 import type { User, Report, TaskAssignment, ReportStatus } from "../types"
 
 interface AppState {
@@ -37,7 +37,7 @@ const determineReportStatus = (assignments: TaskAssignment[]): string => {
 
   if (completedCount === 0) return "Dalam Proses"
   if (completedCount === totalCount) return "Selesai"
-  return "Dalam Proses" // Some completed, some pending
+  return "Dalam Proses"
 }
 
 const initialState: AppState = {
@@ -208,35 +208,37 @@ const AppContext = createContext<{
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
-  const requestRevision = (reportId: string, staffName: string, revisionNotes: string) => {
+  const requestRevision = useCallback((reportId: string, staffName: string, revisionNotes: string) => {
     dispatch({
       type: "REQUEST_REVISION",
       payload: { reportId, staffName, revisionNotes },
     })
-  }
+  }, [])
 
-  const enhancedState = {
-    ...state,
-    reports: state.reports.map((report) => ({
-      ...report,
-      progress: calculateReportProgress(report.assignments),
-      status: determineReportStatus(report.assignments) as ReportStatus,
-    })),
-  }
-
-  return (
-    <AppContext.Provider
-      value={{
-        state: enhancedState,
-        dispatch,
-        calculateProgress: calculateReportProgress,
-        getReportStatus: determineReportStatus,
-        requestRevision,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+  const enhancedState = useMemo(
+    () => ({
+      ...state,
+      reports: state.reports.map((report) => ({
+        ...report,
+        progress: calculateReportProgress(report.assignments),
+        status: determineReportStatus(report.assignments) as ReportStatus,
+      })),
+    }),
+    [state],
   )
+
+  const contextValue = useMemo(
+    () => ({
+      state: enhancedState,
+      dispatch,
+      calculateProgress: calculateReportProgress,
+      getReportStatus: determineReportStatus,
+      requestRevision,
+    }),
+    [enhancedState, requestRevision],
+  )
+
+  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>
 }
 
 export function useApp() {

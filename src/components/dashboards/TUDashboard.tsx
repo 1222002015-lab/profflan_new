@@ -37,16 +37,35 @@ export function TUDashboard() {
   const [trackingResult, setTrackingResult] = useState(null)
   const [isTracking, setIsTracking] = useState(false)
 
+  const userReports = state.reports.filter((report) => report.createdBy === state.currentUser?.id)
+
+  const filteredReports = userReports.filter((report) => {
+    const matchesService = !serviceFilter || report.layanan === serviceFilter
+    const matchesStatus = !statusFilter || report.status === statusFilter
+    const matchesSearch =
+      !searchQuery ||
+      report.hal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      report.noSurat?.toLowerCase().includes(searchQuery.toLowerCase())
+
+    return matchesService && matchesStatus && matchesSearch
+  })
+
+  const stats = {
+    totalLaporan: userReports.length,
+    menungguVerifikasi: userReports.filter((r) => r.status === "Menunggu Verifikasi").length,
+    dalamProses: userReports.filter((r) => r.status === "Dalam Proses").length,
+    selesai: userReports.filter((r) => r.status === "Selesai").length,
+    dikembalikan: userReports.filter((r) => r.status === "Dikembalikan").length,
+  }
+
   const handleLetterTracking = async () => {
     if (!trackingQuery.trim()) return
 
     setIsTracking(true)
     setTrackingResult(null)
 
-    // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    // Search algorithm - check in reports and generate tracking info
     const foundReport = state.reports.find(
       (report) =>
         report.noSurat?.toLowerCase().includes(trackingQuery.toLowerCase()) ||
@@ -55,7 +74,6 @@ export function TUDashboard() {
     )
 
     if (foundReport) {
-      // Generate detailed tracking information
       const trackingInfo = {
         found: true,
         letterNumber: foundReport.noSurat || foundReport.id,
@@ -68,7 +86,6 @@ export function TUDashboard() {
       }
       setTrackingResult(trackingInfo)
     } else {
-      // Generate mock tracking for demonstration
       const mockTracking = generateMockTracking(trackingQuery)
       setTrackingResult(mockTracking)
     }
@@ -157,40 +174,6 @@ export function TUDashboard() {
       estimatedCompletion: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString("id-ID"),
     }
   }
-
-  const userReports = state.reports.filter((report) => report.createdBy === state.currentUser?.id)
-
-  const filteredReports = userReports.filter((report) => {
-    const matchesService = !serviceFilter || report.layanan === serviceFilter
-    const matchesStatus = !statusFilter || report.status === statusFilter
-    const matchesSearch =
-      !searchQuery ||
-      report.hal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.noSurat?.toLowerCase().includes(searchQuery.toLowerCase())
-
-    return matchesService && matchesStatus && matchesSearch
-  })
-
-  const totalLaporan = userReports.length
-  const menungguVerifikasi = userReports.filter((r) => r.status === "Menunggu Verifikasi").length
-  const dalamProses = userReports.filter((r) => r.status === "Dalam Proses").length
-  const selesai = userReports.filter((r) => r.status === "Selesai").length
-  const dikembalikan = userReports.filter((r) => r.status === "Dikembalikan").length
-
-  const availableServices = [...new Set(userReports.map((report) => report.layanan).filter(Boolean))]
-
-  const allAvailableServices = [
-    "Layanan Perpanjangan Hubungan Kerja PPPK",
-    "Layanan Kenaikan Pangkat",
-    "Layanan Pensiun",
-    "Layanan Mutasi",
-    "Layanan Cuti",
-    "Layanan Tunjangan",
-    "Layanan Administrasi Kepegawaian",
-    "Layanan Pelatihan dan Pengembangan",
-    "Layanan Kesehatan",
-    "Layanan Lainnya",
-  ]
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -325,66 +308,66 @@ export function TUDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="p-6">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Tata Usaha</h2>
-          <p className="text-gray-600">Kelola pengajuan dan laporan kepegawaian</p>
+      <div className="p-4 sm:p-6">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Dashboard Tata Usaha</h2>
+          <p className="text-sm sm:text-base text-gray-600">Kelola pengajuan dan laporan kepegawaian</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Laporan</p>
-                <p className="text-2xl font-bold text-gray-900">{totalLaporan}</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Laporan</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalLaporan}</p>
               </div>
-              <FileText className="w-8 h-8 text-blue-500" />
+              <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Menunggu Verifikasi</p>
-                <p className="text-2xl font-bold text-gray-900">{menungguVerifikasi}</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Menunggu Verifikasi</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.menungguVerifikasi}</p>
               </div>
-              <Clock className="w-8 h-8 text-yellow-500" />
+              <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Dalam Proses</p>
-                <p className="text-2xl font-bold text-gray-900">{dalamProses}</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Dalam Proses</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.dalamProses}</p>
               </div>
-              <AlertTriangle className="w-8 h-8 text-blue-500" />
+              <AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Selesai</p>
-                <p className="text-2xl font-bold text-gray-900">{selesai}</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Selesai</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.selesai}</p>
               </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
+              <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border col-span-2 sm:col-span-1">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Dikembalikan</p>
-                <p className="text-2xl font-bold text-gray-900">{dikembalikan}</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Dikembalikan</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.dikembalikan}</p>
               </div>
-              <AlertTriangle className="w-8 h-8 text-red-500" />
+              <AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
             </div>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border">
           <div className="border-b border-gray-200">
-            <div className="flex">
+            <div className="flex overflow-x-auto">
               <button
                 onClick={() => setActiveTab("daftar")}
-                className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
                   activeTab === "daftar"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
@@ -394,7 +377,7 @@ export function TUDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab("buat")}
-                className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
                   activeTab === "buat"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
@@ -404,7 +387,7 @@ export function TUDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab("lacak")}
-                className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
                   activeTab === "lacak"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
@@ -417,22 +400,22 @@ export function TUDashboard() {
 
           {activeTab === "daftar" && (
             <>
-              <div className="p-6 border-b border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="relative">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="relative sm:col-span-2 lg:col-span-1">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
                       placeholder="Cari berdasarkan judul atau nomor surat..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     />
                   </div>
                   <select
                     value={serviceFilter}
                     onChange={(e) => setServiceFilter(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   >
                     <option value="">Semua Layanan</option>
                     {SERVICES.map((service) => (
@@ -444,7 +427,7 @@ export function TUDashboard() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   >
                     <option value="">Semua Status</option>
                     <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
@@ -454,145 +437,163 @@ export function TUDashboard() {
                   </select>
                   <button
                     onClick={resetFilters}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
                   >
                     <Filter className="w-4 h-4" />
-                    Reset Filter
+                    <span className="hidden sm:inline">Reset Filter</span>
+                    <span className="sm:hidden">Reset</span>
                   </button>
                 </div>
               </div>
 
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Daftar Laporan ({filteredReports.length})</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Judul Laporan
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Layanan
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Diajukan Oleh
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Tanggal
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Prioritas
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Progress
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Aksi
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredReports.map((report) => (
-                        <tr key={report.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {report.hal || report.noSurat}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">{report.layanan}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{state.currentUser?.name || "TU"}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            {new Date(report.createdAt || Date.now()).toLocaleDateString("id-ID")}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(report.status)}`}
-                            >
-                              {report.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded ${getPriorityColor(report.priority || "Sedang")}`}
-                            >
-                              {report.priority || "Sedang"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <div className="w-16 bg-gray-200 rounded-full h-2">
-                                <div
-                                  className={`h-2 rounded-full ${getProgressColor(report.progress || 0)}`}
-                                  style={{ width: `${report.progress || 0}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-xs text-gray-600">{report.progress || 0}%</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex items-center gap-2 relative">
-                              <div className="relative">
-                                <button
-                                  onClick={() => setOpenActionMenu(openActionMenu === report.id ? null : report.id)}
-                                  className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-100"
-                                  title="Menu Lainnya"
-                                >
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </button>
-                                {openActionMenu === report.id && (
-                                  <div className="absolute right-0 top-8 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                                    <div className="py-1">
-                                      <button
-                                        onClick={() => handleEditReport(report)}
-                                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                        Edit Laporan
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteReport(report.id)}
-                                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                        Hapus
-                                      </button>
-                                      <button
-                                        onClick={() => handleForwardReport(report)}
-                                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
-                                      >
-                                        <Send className="w-4 h-4" />
-                                        Teruskan ke Koordinator
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredReports.length === 0 && (
+              <div className="p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">
+                  Daftar Laporan ({filteredReports.length})
+                </h3>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-50">
                         <tr>
-                          <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                            {userReports.length === 0
-                              ? 'Belum ada laporan. Klik tab "Buat Laporan Baru" untuk membuat laporan baru.'
-                              : "Tidak ada laporan yang sesuai dengan filter yang dipilih."}
-                          </td>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Judul Laporan
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Layanan
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                            Diajukan Oleh
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                            Tanggal
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                            Prioritas
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                            Progress
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Aksi
+                          </th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredReports.map((report) => (
+                          <tr key={report.id} className="hover:bg-gray-50">
+                            <td className="px-3 sm:px-6 py-4 text-sm font-medium text-gray-900">
+                              <div className="max-w-32 sm:max-w-none truncate">{report.hal || report.noSurat}</div>
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 text-sm text-gray-900">
+                              <div className="max-w-24 sm:max-w-xs truncate">{report.layanan}</div>
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 text-sm text-gray-900 hidden sm:table-cell">
+                              {state.currentUser?.name || "TU"}
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 text-sm text-gray-900 hidden md:table-cell">
+                              {new Date(report.createdAt || Date.now()).toLocaleDateString("id-ID")}
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(report.status)}`}
+                              >
+                                <span className="hidden sm:inline">{report.status}</span>
+                                <span className="sm:hidden">
+                                  {report.status === "Menunggu Verifikasi"
+                                    ? "Tunggu"
+                                    : report.status === "Dalam Proses"
+                                      ? "Proses"
+                                      : report.status === "Dikembalikan"
+                                        ? "Kembali"
+                                        : report.status}
+                                </span>
+                              </span>
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                              <span
+                                className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded ${getPriorityColor(report.priority || "Sedang")}`}
+                              >
+                                {report.priority || "Sedang"}
+                              </span>
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full ${getProgressColor(report.progress || 0)}`}
+                                    style={{ width: `${report.progress || 0}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-xs text-gray-600">{report.progress || 0}%</span>
+                              </div>
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex items-center gap-2 relative">
+                                <div className="relative">
+                                  <button
+                                    onClick={() => setOpenActionMenu(openActionMenu === report.id ? null : report.id)}
+                                    className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-100"
+                                    title="Menu Lainnya"
+                                  >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </button>
+                                  {openActionMenu === report.id && (
+                                    <div className="absolute right-0 top-8 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                                      <div className="py-1">
+                                        <button
+                                          onClick={() => handleEditReport(report)}
+                                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                          Edit Laporan
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteReport(report.id)}
+                                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                          Hapus
+                                        </button>
+                                        <button
+                                          onClick={() => handleForwardReport(report)}
+                                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
+                                        >
+                                          <Send className="w-4 h-4" />
+                                          Teruskan ke Koordinator
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredReports.length === 0 && (
+                          <tr>
+                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500 text-sm">
+                              {userReports.length === 0
+                                ? 'Belum ada laporan. Klik tab "Buat Laporan Baru" untuk membuat laporan baru.'
+                                : "Tidak ada laporan yang sesuai dengan filter yang dipilih."}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </>
           )}
 
           {activeTab === "buat" && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <button
                 onClick={handleAddReport}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
               >
                 <Plus className="w-4 h-4" />
                 Buat Laporan Baru
@@ -601,16 +602,18 @@ export function TUDashboard() {
           )}
 
           {activeTab === "lacak" && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="max-w-2xl mx-auto">
-                <div className="text-center mb-8">
-                  <Package className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Lacak Surat</h3>
-                  <p className="text-gray-600">Masukkan nomor surat atau ID laporan untuk melacak status</p>
+                <div className="text-center mb-6 sm:mb-8">
+                  <Package className="w-12 h-12 sm:w-16 sm:h-16 text-blue-500 mx-auto mb-4" />
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Lacak Surat</h3>
+                  <p className="text-sm sm:text-base text-gray-600">
+                    Masukkan nomor surat atau ID laporan untuk melacak status
+                  </p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                  <div className="flex gap-4">
+                <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-6">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <div className="flex-1">
                       <input
                         type="text"
@@ -618,13 +621,13 @@ export function TUDashboard() {
                         value={trackingQuery}
                         onChange={(e) => setTrackingQuery(e.target.value)}
                         onKeyPress={(e) => e.key === "Enter" && handleLetterTracking()}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       />
                     </div>
                     <button
                       onClick={handleLetterTracking}
                       disabled={isTracking || !trackingQuery.trim()}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
                       <Search className="w-4 h-4" />
                       {isTracking ? "Melacak..." : "Lacak"}
@@ -640,20 +643,22 @@ export function TUDashboard() {
                 )}
 
                 {trackingResult && !isTracking && (
-                  <div className="bg-white border rounded-lg p-6">
+                  <div className="bg-white border rounded-lg p-4 sm:p-6">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <h4 className="text-lg font-semibold text-gray-900">Surat Ditemukan</h4>
+                      <h4 className="text-base sm:text-lg font-semibold text-gray-900">Surat Ditemukan</h4>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Nomor Surat</p>
-                        <p className="font-medium text-gray-900">{trackingResult.letterNumber}</p>
+                        <p className="font-medium text-gray-900 text-sm sm:text-base break-all">
+                          {trackingResult.letterNumber}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Perihal</p>
-                        <p className="font-medium text-gray-900">{trackingResult.subject}</p>
+                        <p className="font-medium text-gray-900 text-sm sm:text-base">{trackingResult.subject}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Status</p>
@@ -665,7 +670,9 @@ export function TUDashboard() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Estimasi Selesai</p>
-                        <p className="font-medium text-gray-900">{trackingResult.estimatedCompletion}</p>
+                        <p className="font-medium text-gray-900 text-sm sm:text-base">
+                          {trackingResult.estimatedCompletion}
+                        </p>
                       </div>
                     </div>
 
@@ -684,16 +691,16 @@ export function TUDashboard() {
 
                     <div className="mb-6">
                       <p className="text-sm text-gray-600 mb-4">Lokasi Saat Ini</p>
-                      <p className="font-medium text-gray-900">{trackingResult.currentLocation}</p>
+                      <p className="font-medium text-gray-900 text-sm sm:text-base">{trackingResult.currentLocation}</p>
                     </div>
 
                     <div>
                       <p className="text-sm text-gray-600 mb-4">Riwayat Perjalanan Surat</p>
                       <div className="space-y-4">
                         {trackingResult.timeline.map((item, index) => (
-                          <div key={index} className="flex items-start gap-4">
+                          <div key={index} className="flex items-start gap-3 sm:gap-4">
                             <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                              className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${
                                 item.status === "completed"
                                   ? "bg-green-100 text-green-800"
                                   : item.status === "in-progress"
@@ -703,8 +710,8 @@ export function TUDashboard() {
                             >
                               {item.step}
                             </div>
-                            <div className="flex-1">
-                              <p className="font-medium text-gray-900">{item.action}</p>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 text-sm sm:text-base">{item.action}</p>
                               <p className="text-sm text-gray-600">{item.user}</p>
                               <p className="text-xs text-gray-500">
                                 {item.date} • {item.time}

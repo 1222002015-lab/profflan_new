@@ -35,11 +35,41 @@ export function CoordinatorDashboard() {
   const [trackingResult, setTrackingResult] = useState(null)
   const [isTracking, setIsTracking] = useState(false)
 
+  const assignedReports = state.reports.filter(
+    (report) =>
+      report.assignedCoordinators?.includes(state.currentUser?.name) ||
+      report.currentHolder === state.currentUser?.name,
+  )
+
+  const filteredReports = assignedReports.filter((report) => {
+    const matchesService = !serviceFilter || report.layanan === serviceFilter
+    const matchesStatus = !statusFilter || report.status === statusFilter
+    const matchesSearch =
+      !searchQuery ||
+      report.hal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      report.noSurat?.toLowerCase().includes(searchQuery.toLowerCase())
+
+    return matchesService && matchesStatus && matchesSearch
+  })
+
+  const stats = {
+    total: assignedReports.length,
+    pending: assignedReports.filter((r) => r.status === "in-progress" || r.status === "Dalam Proses").length,
+    completed: assignedReports.filter((r) => r.status === "completed" || r.status === "Selesai").length,
+    revision: assignedReports.filter((r) => r.status === "revision-required" || r.status === "Revisi").length,
+    assigned: assignedReports.filter((r) => r.assignments && r.assignments.length > 0).length,
+  }
+
+  const resetFilters = () => {
+    setServiceFilter("")
+    setStatusFilter("")
+    setSearchQuery("")
+  }
+
   const trackLetter = async (query) => {
     if (!query.trim()) return
 
     setIsTracking(true)
-
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     const foundReport = state.reports.find(
@@ -143,37 +173,6 @@ export function CoordinatorDashboard() {
       default:
         return "bg-gray-300"
     }
-  }
-
-  const assignedReports = state.reports.filter(
-    (report) =>
-      report.assignedCoordinators?.includes(state.currentUser?.name) ||
-      report.currentHolder === state.currentUser?.name,
-  )
-
-  const filteredReports = assignedReports.filter((report) => {
-    const matchesService = !serviceFilter || report.layanan === serviceFilter
-    const matchesStatus = !statusFilter || report.status === statusFilter
-    const matchesSearch =
-      !searchQuery ||
-      report.hal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.noSurat?.toLowerCase().includes(searchQuery.toLowerCase())
-
-    return matchesService && matchesStatus && matchesSearch
-  })
-
-  const stats = {
-    total: assignedReports.length,
-    pending: assignedReports.filter((r) => r.status === "in-progress" || r.status === "Dalam Proses").length,
-    completed: assignedReports.filter((r) => r.status === "completed" || r.status === "Selesai").length,
-    revision: assignedReports.filter((r) => r.status === "revision-required" || r.status === "Revisi").length,
-    assigned: assignedReports.filter((r) => r.assignments && r.assignments.length > 0).length,
-  }
-
-  const resetFilters = () => {
-    setServiceFilter("")
-    setStatusFilter("")
-    setSearchQuery("")
   }
 
   const getStatusColor = (status) => {

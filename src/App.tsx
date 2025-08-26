@@ -90,7 +90,7 @@ function App() {
         userRole={state.currentUser?.role || "Role"}
         userTitle={state.currentUser?.role || "Title"}
       />
-      <main className="max-w-7xl mx-auto py-8">{getDashboardComponent()}</main>
+      <main className="max-w-7xl mx-auto py-4 px-4 sm:py-8 sm:px-6 lg:px-8">{getDashboardComponent()}</main>
     </div>
   )
 }
