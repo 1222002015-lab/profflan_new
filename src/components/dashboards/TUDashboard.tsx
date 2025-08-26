@@ -8,7 +8,6 @@ import {
   Plus,
   Search,
   Filter,
-  Eye,
   MoreHorizontal,
   Clock,
   AlertTriangle,
@@ -533,12 +532,6 @@ export function TUDashboard() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex items-center gap-2 relative">
-                              <button
-                                className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-100"
-                                title="Lihat Detail"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
                               <div className="relative">
                                 <button
                                   onClick={() => setOpenActionMenu(openActionMenu === report.id ? null : report.id)}
