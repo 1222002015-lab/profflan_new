@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useApp } from "../../context/AppContext"
+import { SERVICES } from "../../types"
 import {
   FileText,
   Plus,
@@ -28,8 +29,8 @@ export function TUDashboard() {
   const [forwardingReport, setForwardingReport] = useState(null)
   const [activeTab, setActiveTab] = useState("daftar")
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterLayanan, setFilterLayanan] = useState("Semua Layanan")
-  const [filterStatus, setFilterStatus] = useState("Semua Status")
+  const [serviceFilter, setServiceFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
   const [openActionMenu, setOpenActionMenu] = useState(null)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
@@ -161,17 +162,14 @@ export function TUDashboard() {
   const userReports = state.reports.filter((report) => report.createdBy === state.currentUser?.id)
 
   const filteredReports = userReports.filter((report) => {
+    const matchesService = !serviceFilter || report.layanan === serviceFilter
+    const matchesStatus = !statusFilter || report.status === statusFilter
     const matchesSearch =
-      searchQuery === "" ||
+      !searchQuery ||
       report.hal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.noSurat?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      state.currentUser?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      report.noSurat?.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesLayanan = filterLayanan === "Semua Layanan" || report.layanan === filterLayanan
-
-    const matchesStatus = filterStatus === "Semua Status" || report.status === filterStatus
-
-    return matchesSearch && matchesLayanan && matchesStatus
+    return matchesService && matchesStatus && matchesSearch
   })
 
   const totalLaporan = userReports.length
@@ -320,6 +318,12 @@ export function TUDashboard() {
     dispatch({ type: "LOGOUT" })
   }
 
+  const resetFilters = () => {
+    setServiceFilter("")
+    setStatusFilter("")
+    setSearchQuery("")
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-6">
@@ -420,41 +424,37 @@ export function TUDashboard() {
                     <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Cari berdasarkan judul atau pengaju..."
+                      placeholder="Cari berdasarkan judul atau nomor surat..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <select
-                    value={filterLayanan}
-                    onChange={(e) => setFilterLayanan(e.target.value)}
+                    value={serviceFilter}
+                    onChange={(e) => setServiceFilter(e.target.value)}
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option>Semua Layanan</option>
-                    {allAvailableServices.map((service) => (
+                    <option value="">Semua Layanan</option>
+                    {SERVICES.map((service) => (
                       <option key={service} value={service}>
                         {service}
                       </option>
                     ))}
                   </select>
                   <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option>Semua Status</option>
-                    <option>Menunggu Verifikasi</option>
-                    <option>Dalam Proses</option>
-                    <option>Selesai</option>
-                    <option>Dikembalikan</option>
+                    <option value="">Semua Status</option>
+                    <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                    <option value="Dalam Proses">Dalam Proses</option>
+                    <option value="Selesai">Selesai</option>
+                    <option value="Dikembalikan">Dikembalikan</option>
                   </select>
                   <button
-                    onClick={() => {
-                      setSearchQuery("")
-                      setFilterLayanan("Semua Layanan")
-                      setFilterStatus("Semua Status")
-                    }}
+                    onClick={resetFilters}
                     className="flex items-center gap-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     <Filter className="w-4 h-4" />
@@ -690,7 +690,7 @@ export function TUDashboard() {
                     </div>
 
                     <div className="mb-6">
-                      <p className="text-sm text-gray-600 mb-2">Lokasi Saat Ini</p>
+                      <p className="text-sm text-gray-600 mb-4">Lokasi Saat Ini</p>
                       <p className="font-medium text-gray-900">{trackingResult.currentLocation}</p>
                     </div>
 
